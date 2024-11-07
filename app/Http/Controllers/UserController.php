@@ -15,19 +15,17 @@ class UserController extends Controller
     {
         //get users with pagination
         $users = DB::table('users')
-        ->when($request->input('name'), function ($query, $name) {
-            return $query->where('name', 'like', '%' . $name . '%');
-        })
-        ->orderBy('created_at', 'desc')
-        ->paginate(5);
-        return view('user.index', compact('users'));
-
+            ->when($request->input('name'), function ($query, $name) {
+                return $query->where('name', 'like', '%' . $name . '%');
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(6);
+        return view('pages.user.index', compact('users'));
     }
-
     //create
     public function create()
     {
-        return view ('user.add');
+        return view('pages.user.create');
     }
 
     public function store(Request $request)
@@ -36,7 +34,7 @@ class UserController extends Controller
             'name' => 'required',
             'email' => 'required',
             'password' => 'required',
-            'phone'=> 'required',
+            'phone' => 'required',
             'roles' => 'required',
         ]);
         $user = User::create([
@@ -46,22 +44,21 @@ class UserController extends Controller
             'phone' => $request->phone,
             'roles' => $request->roles,
         ]);
-        return redirect()->route('user.index')->with('success', 'User created successfully.');
-
+        return redirect()->route('user.index')->with('success', 'User berhasil di tambahkan.');
     }
-
     //show
     public function show($id)
     {
-        return view ('pages.dashboard');
-
+        return view('pages.dashboard');
+        $user = auth()->user(); // Fetch the authenticated user
+        return view('profile.show', compact('user'));
     }
 
     //edit
     public function edit($id)
     {
         $user = User::findOrFail($id);
-        return view('user.edit', compact('user'));
+        return view('pages.user.edit', compact('user'));
     }
 
     //update
@@ -78,21 +75,19 @@ class UserController extends Controller
             $data['password'] = $user->password;
         }
         $user->update($data);
-        return redirect()->route('user.index') ->with('success', 'User updated successfully');
-
+        return redirect()->route('user.index')->with('success', 'User berhasil di update');
     }
-
+    //destroy
     public function destroy($id)
     {
-        $user = User::findOrFail($id);
-        $user->delete();
-        return redirect()->route('user.index')->with('success', 'User deleted successfully');
-    }
+        $user = User::find($id);
 
-    //  public function destroy($id)
-    //  {
-    //      $user = User::findOrFail($id);
-    //      $user->delete();
-    //      return redirect()->route('user.index')->with('success', 'User deleted successfully');
-    //  }
+        // Check if user role is "STAFF"
+        if ($user->roles === 'STAFF') {
+            return redirect()->route('user.index')->with('error', 'Pengguna staf tidak dapat dihapus.');
+        }
+
+        $user->delete();
+        return redirect()->route('user.index')->with('success', 'User berhasi di hapus');
+    }
 }
